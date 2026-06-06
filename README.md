@@ -37,16 +37,89 @@ User: "帮我写一篇关于RFID技术在感知领域应用的论文，综述类
 → Deliverable: RFID技术用于感知领域_学术报告.md
 ```
 
+## Prerequisites — Install These First
+
+This pipeline orchestrates four companion skills. **All four must be installed before using this skill.**
+
+### 1. `scientific-writing` (used in S2)
+
+Two-stage academic writing methodology — outline first, then flowing prose. No bullet points in the final manuscript.
+
+- **Author**: K-Dense Inc. (MIT)
+- **Install**: This skill is bundled with the [K-Dense AI co-scientist](https://github.com/K-Dense-AI/k-dense-byok) package. Copy the `scientific-writing/` skill folder into your `~/.claude/skills/` directory.
+
+```bash
+# If you have the K-Dense package:
+cp -r path/to/k-dense/skills/scientific-writing ~/.claude/skills/
+```
+
+### 2. `humanizer-zh` (used in S5)
+
+Chinese text humanizer that detects and rewrites 24 AI writing patterns to produce natural, human-sounding prose.
+
+- **Source**: [op7418/Humanizer-zh](https://github.com/op7418/Humanizer-zh)
+
+```bash
+git clone https://github.com/op7418/Humanizer-zh.git /tmp/humanizer-zh
+cp -r /tmp/humanizer-zh ~/.claude/skills/humanizer-zh
+```
+
+Or with GitHub CLI:
+
+```bash
+gh repo clone op7418/Humanizer-zh ~/.claude/skills/humanizer-zh
+```
+
+### 3. `paper-self-review` (used in S3)
+
+7-step structured paper review with Claim Audit and P0/P1/P2 issue grading. Bundled inside the `claude-scholar` skill suite.
+
+- **Source**: [Galaxy-Dawn/claude-scholar](https://github.com/Galaxy-Dawn/claude-scholar)
+
+```bash
+git clone https://github.com/Galaxy-Dawn/claude-scholar.git /tmp/claude-scholar
+cp -r /tmp/claude-scholar/skills/paper-self-review ~/.claude/skills/paper-self-review
+```
+
+Or with GitHub CLI:
+
+```bash
+gh repo clone Galaxy-Dawn/claude-scholar /tmp/claude-scholar
+cp -r /tmp/claude-scholar/skills/paper-self-review ~/.claude/skills/paper-self-review
+```
+
+### 4. `paper-format-checker` (used in S6)
+
+GB/T 7713.2-2022 format compliance checker with 19 categories and 60+ check items for Chinese academic papers.
+
+- **Install**: Obtain the `paper-format-checker` skill and place it in `~/.claude/skills/paper-format-checker/`. If you received this skill from another user, simply copy the folder:
+
+```bash
+cp -r path/to/paper-format-checker ~/.claude/skills/paper-format-checker
+```
+
+### Quick Verification
+
+After installing all prerequisites, your `~/.claude/skills/` directory should contain:
+
+```
+~/.claude/skills/
+├── autonomous-paper-xts/    ← this skill
+├── scientific-writing/      ← S2
+├── humanizer-zh/            ← S5
+├── paper-self-review/       ← S3
+└── paper-format-checker/    ← S6
+```
+
+You can verify with:
+
+```bash
+ls ~/.claude/skills/ | grep -E "autonomous-paper-xts|scientific-writing|humanizer-zh|paper-self-review|paper-format-checker"
+```
+
+All five directories should appear in the output.
+
 ## Installation
-
-### Prerequisites
-
-This skill depends on several companion skills. Make sure they are also installed:
-
-- `scientific-writing` — two-stage academic writing methodology
-- `paper-self-review` — 7-step structured paper review
-- `humanizer-zh` — 24-pattern Chinese AI writing detection
-- `paper-format-checker` — GB/T 7713.2 format compliance checker
 
 ### Option A: Git Clone (Recommended)
 
@@ -98,6 +171,8 @@ cp -r /tmp/autonomous-paper-xts/.claude/skills/autonomous-paper-xts ~/.claude/sk
 ├── SKILL.md                              # Main skill definition & pipeline instructions
 └── references/
     ├── ai-writing-patterns.md            # 24 AI writing patterns for S5 detection
+    ├── FINAL-VERDICT.md                  # Submission readiness verdict criteria for S3
+    ├── gbt7713-2-2022-rules.md           # GB/T 7713.2 format rules (19 categories) for S6
     ├── quality-gates.md                  # Quality gate definitions for each stage
     └── section-checklist.md              # Per-section review checklist for S3
 ```
