@@ -1,11 +1,12 @@
 export const meta = {
   name: 'optoelectronic-ai-paper-optimized',
-  description: '光电信息与AI融合技术论文 - 优化版四阶段流水线',
+  description: '光电信息与AI融合技术论文 - 五阶段流水线（含同行评审）',
   phases: [
     { title: 'S1 文献调研' },
     { title: 'S2 科学写作' },
     { title: 'S3 质量打磨' },
     { title: 'S4 格式输出' },
+    { title: 'S5 同行评审' },
   ],
 }
 
@@ -196,12 +197,217 @@ E. 术语规范：科技名词规范、前后一致
 
 直接输出最终论文。`, { label: '格式合规', phase: 'S4 格式合规' })
 
-// 写入最终文件
-const outputPath = '/Users/xts/Desktop/光电信息与AI融合_学术报告.md'
-await agent(`将以下论文内容写入文件 ${outputPath}：
+// S5: 同行评审 - 4路审稿人面板 + 编辑综合 + 修订
+phase('S5 同行评审')
 
+// Step 1: 领域分析 → 配置审稿人身份
+const fieldConfig = await agent(`分析以下论文的学科领域，生成审稿人配置卡。
+
+论文内容：
 ${finalPaper}
 
-确保文件内容完整，包含所有章节、表格、参考文献。`, { label: '写入文件', phase: 'S4 格式合规' })
+输出格式：
+1. 主要学科领域 + 子领域
+2. 审稿人配置卡（4位审稿人的专业身份、审查重点、评判标准）
+3. 领域特有的审查锚点（如信息科学/AI领域的技术声明需实验数据支撑、需与SOTA对比等）
 
-return { status: 'completed', output: outputPath }
+直接输出配置卡。`, { label: '领域配置', phase: 'S5 同行评审' })
+
+// Step 2: 四路并行审稿
+const [eicReview, r1Method, r2Domain, devilReview] = await parallel([
+  // EIC 主编
+  agent(`你是一位国际学术期刊主编。请对以下论文进行总体评估。
+
+审稿人配置：
+${fieldConfig}
+
+论文内容：
+${finalPaper}
+
+审查维度：
+1. 期刊匹配度：论文是否适合光电/信息科学领域期刊
+2. 原创性：是否有新的学术贡献（理论/方法/应用）
+3. 整体质量：结构、逻辑、写作水平
+4. 战略价值：对领域发展的推动作用
+
+输出格式：
+- 推荐决定：Accept / Minor Revision / Major Revision / Reject
+- 总体评价（150-200字）
+- 优点（3项）
+- 问题（3-5项，含严重性 CRITICAL/MAJOR/MINOR）
+- 修改建议`, { label: 'EIC主编', phase: 'S5 同行评审' }),
+
+  // 审稿人1：方法论
+  agent(`你是一位研究方法论专家。请对以下论文的研究方法和数据进行审查。
+
+审稿人配置：
+${fieldConfig}
+
+论文内容：
+${finalPaper}
+
+审查维度：
+1. 研究设计：综述结构是否合理、文献选择是否系统
+2. 数据分析：引用数据是否准确、对比是否公平
+3. 技术细节：技术描述是否准确、参数是否正确
+4. 可重复性：方法和数据是否足够他人复现
+
+输出格式：
+- 推荐决定：Accept / Minor Revision / Major Revision / Reject
+- 方法论评价（150-200字）
+- 优点（3项）
+- 问题（3-5项，含严重性 CRITICAL/MAJOR/MINOR）
+- 修改建议`, { label: '方法论审稿', phase: 'S5 同行评审' }),
+
+  // 审稿人2：领域专家
+  agent(`你是一位光电信息与AI融合领域的资深研究者。请对以下论文的领域知识和学术贡献进行审查。
+
+审稿人配置：
+${fieldConfig}
+
+论文内容：
+${finalPaper}
+
+审查维度：
+1. 文献覆盖：是否覆盖领域核心文献（经典+前沿）
+2. 理论框架：理论分析是否准确、框架是否恰当
+3. 学术贡献：对领域的增量贡献是什么
+4. 术语准确性：专业术语使用是否规范
+
+输出格式：
+- 推荐决定：Accept / Minor Revision / Major Revision / Reject
+- 领域评价（150-200字）
+- 优点（3项）
+- 问题（3-5项，含严重性 CRITICAL/MAJOR/MINOR）
+- 缺失的关键文献（如有）
+- 修改建议`, { label: '领域专家审稿', phase: 'S5 同行评审' }),
+
+  // 魔鬼代言人
+  agent(`你是一位魔鬼代言人审稿人。你的任务不是评分，而是找到论文最脆弱的点——最大的逻辑漏洞、最强的反驳论据。
+
+审稿人配置：
+${fieldConfig}
+
+论文内容：
+${finalPaper}
+
+8大挑战维度：
+1. 核心论点挑战：最强反驳是什么？
+2. 樱桃采摘检测：文献选择是否有偏差？
+3. 确认偏差检测：结论是否先于文献调研？
+4. 逻辑链验证：从前提到结论每步是否有效？
+5. 过度概括检查：结论是否超出了数据支撑？
+6. 替代路径分析：有没有被忽略的更好方案？
+7. 利益相关者盲点：是否遗漏了重要视角？
+8. "So What?"测试：这篇论文真的有必要吗？
+
+严重性分级：
+- CRITICAL：核心论证的致命缺陷，无法通过修改修复
+- MAJOR：严重削弱可信度，但可通过大幅修改改善
+- MINOR：不影响核心论点，但值得改进
+- OBSERVATION：不是缺陷，提供替代视角
+
+输出格式：
+- 最强反驳论据（200-300字，这是最重要的部分）
+- CRITICAL 问题列表
+- MAJOR 问题列表
+- MINOR 问题列表
+- 被忽略的替代解释
+- 观察（非缺陷）`, { label: '魔鬼代言人', phase: 'S5 同行评审' }),
+])
+
+// Step 3: 编辑综合判定
+const editorialDecision = await agent(`你是编辑综合人。请汇总以下4位审稿人的意见，生成正式的编辑决定信。
+
+## EIC主编意见
+${eicReview}
+
+## 审稿人1（方法论）意见
+${r1Method}
+
+## 审稿人2（领域）意见
+${r2Domain}
+
+## 魔鬼代言人意见
+${devilReview}
+
+输出格式：
+1. 编辑决定：Accept / Minor Revision / Major Revision / Reject
+2. 决定理由（100字）
+3. 必须修改项（合并去重，标注来源审稿人）
+4. 建议修改项
+5. 各审稿人推荐汇总表
+
+如果判定为 Major Revision 或 Reject，说明主要原因。`, { label: '编辑综合', phase: 'S5 同行评审' })
+
+// Step 4: 根据审稿意见修改论文
+const revisedPaper = await agent(`根据以下审稿意见修改论文。逐条处理所有"必须修改项"，选择性处理"建议修改项"。
+
+## 审稿意见（编辑决定信）
+${editorialDecision}
+
+## 原论文
+${finalPaper}
+
+修改要求：
+1. 逐条处理必须修改项，每项修改后在文末"修订说明"中记录
+2. 对于 CRITICAL 问题：必须实质性修改，不能只是文字润色
+3. 对于 MAJOR 问题：认真修改，给出具体改进
+4. 对于 MINOR 问题：尽量修改
+5. 保持论文整体结构和格式不变
+6. 修改处用【已修改】标注（仅在修订说明中，不在正文中）
+
+输出：
+1. 修改后的完整论文
+2. 文末附"修订说明"（格式：#编号 | 问题来源 | 修改内容）`, { label: '按审稿意见修改', phase: 'S5 同行评审' })
+
+// Step 5: 轻量复审（仅EIC确认修改是否到位）
+const reReview = await agent(`你是主编。作者已根据审稿意见修改了论文。请确认修改是否到位。
+
+## 原审稿意见
+${editorialDecision}
+
+## 修改后的论文
+${revisedPaper}
+
+检查：
+1. 所有"必须修改项"是否已处理
+2. 修改是否实质性（非敷衍）
+3. 是否引入新问题
+
+输出：
+- 复审决定：Accept / 需要继续修改
+- 如需继续修改，列出残留问题
+- 如通过，简要说明通过理由`, { label: 'EIC复审确认', phase: 'S5 同行评审' })
+
+// 合并最终输出
+const finalOutput = revisedPaper
+const reviewReport = `# 审稿意见书
+
+${editorialDecision}
+
+---
+
+# 复审确认
+
+${reReview}`
+
+// 写入最终文件
+const outputPath = '/Users/xts/Desktop/光电信息与AI融合_学术报告.md'
+const reviewPath = '/Users/xts/Desktop/光电信息与AI融合_审稿意见书.md'
+
+await parallel([
+  agent(`将以下论文内容写入文件 ${outputPath}：
+
+${finalOutput}
+
+确保文件内容完整，包含所有章节、表格、参考文献和修订说明。`, { label: '写入论文', phase: 'S5 同行评审' }),
+
+  agent(`将以下审稿意见书写入文件 ${reviewPath}：
+
+${reviewReport}
+
+确保内容完整。`, { label: '写入审稿意见', phase: 'S5 同行评审' }),
+])
+
+return { status: 'completed', output: outputPath, reviewReport: reviewPath }
